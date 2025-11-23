@@ -1,33 +1,24 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 
-const CELL_SIZE = 16; // фиксированный размер клетки
-const TICK_MS = 150;  // частота смещения шахматки
-const IDLE_STOP_MS = 150; // остановка таймера после бездействия
+const CELL_SIZE = 16;
+const TICK_MS = 150;
+const IDLE_STOP_MS = 150;
+const ANIMATION_DURATION = 1; // длительность анимации прыжка (мс)
 
 const CheckerboardCanvas = () => {
   const canvasRef = useRef(null);
 
   const [hoverPos, setHoverPos] = useState(null);
   const [shift, setShift] = useState(0);
-  const [invSquare, setInvSquare] = useState({ row: 5, col: 5 });
+
+  // текущие координаты квадрата
+  const [invSquare, setInvSquare] = useState({row: -200, col: -200});
+  // целевые координаты квадрата
+  const targetSquareRef = useRef(invSquare);
+  const animStartRef = useRef(null);
 
   const intervalRef = useRef(null);
   const idleTimeoutRef = useRef(null);
-
-  // ---------- Случайное перемещение квадрата ----------
-  const moveInvSquareRandomly = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rows = Math.floor(canvas.height / CELL_SIZE);
-    const cols = Math.floor(canvas.width / CELL_SIZE);
-
-    const maxRow = Math.max(0, rows - 2);
-    const maxCol = Math.max(0, cols - 2);
-
-    const newRow = Math.floor(Math.random() * (maxRow + 1));
-    const newCol = Math.floor(Math.random() * (maxCol + 1));
-    setInvSquare({ row: newRow, col: newCol });
-  }, []);
 
   // ---------- Таймер смещения ----------
   const startTicking = useCallback(() => {
@@ -53,12 +44,51 @@ const CheckerboardCanvas = () => {
     }, IDLE_STOP_MS);
   }, [stopTicking]);
 
+  // ---------- Анимация перемещения квадрата ----------
+  const animateSquare = useCallback((timestamp) => {
+    if (!animStartRef.current) animStartRef.current = timestamp;
+    const progress = Math.min((timestamp - animStartRef.current) / ANIMATION_DURATION, 1);
+
+    const startRow = invSquare.row;
+    const startCol = invSquare.col;
+    const targetRow = Math.max(1, targetSquareRef.current.row);
+    const targetCol = targetSquareRef.current.col;
+
+    const newRow = startRow + (targetRow - startRow) * progress;
+    const newCol = startCol + (targetCol - startCol) * progress;
+
+    setInvSquare({row: newRow, col: newCol});
+
+    if (progress < 1) {
+      requestAnimationFrame(animateSquare);
+    } else {
+      animStartRef.current = null;
+    }
+  }, [invSquare]);
+
+  const moveInvSquareRandomly = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rows = Math.floor(canvas.height / CELL_SIZE);
+    const cols = Math.floor(canvas.width / CELL_SIZE);
+
+    const maxRow = Math.max(0, rows - 2);
+    const maxCol = Math.max(0, cols - 2);
+
+    const newRow = Math.floor(Math.random() * (maxRow + 1));
+    const newCol = Math.floor(Math.random() * (maxCol + 1));
+
+    targetSquareRef.current = {row: newRow, col: newCol};
+    animStartRef.current = null;
+    requestAnimationFrame(animateSquare);
+  }, [animateSquare]);
+
   // ---------- Рисование ----------
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const { width, height } = canvas;
+    const {width, height} = canvas;
 
     const rows = Math.ceil(height / CELL_SIZE);
     const cols = Math.ceil(width / CELL_SIZE);
@@ -72,10 +102,10 @@ const CheckerboardCanvas = () => {
 
         // Инвертированный квадрат 2×2
         if (
-          row >= invSquare.row &&
-          row < invSquare.row + 2 &&
-          col >= invSquare.col &&
-          col < invSquare.col + 2
+          row >= Math.floor(invSquare.row) &&
+          row < Math.floor(invSquare.row) + 2 &&
+          col >= Math.floor(invSquare.col) &&
+          col < Math.floor(invSquare.col) + 2
         ) {
           color = color === '#fff' ? '#000' : '#fff';
         }
@@ -139,7 +169,7 @@ const CheckerboardCanvas = () => {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    setHoverPos({ x, y });
+    setHoverPos({x, y});
 
     startTicking();
     resetIdleStop();
@@ -154,10 +184,10 @@ const CheckerboardCanvas = () => {
     const row = Math.floor(y / CELL_SIZE);
 
     if (
-      row >= invSquare.row &&
-      row < invSquare.row + 2 &&
-      col >= invSquare.col &&
-      col < invSquare.col + 2
+      row >= Math.floor(invSquare.row) &&
+      row < Math.floor(invSquare.row) + 2 &&
+      col >= Math.floor(invSquare.col) &&
+      col < Math.floor(invSquare.col) + 2
     ) {
       moveInvSquareRandomly();
     }
@@ -181,10 +211,26 @@ const CheckerboardCanvas = () => {
     };
   }, [stopTicking]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rows = Math.floor(canvas.height / CELL_SIZE);
+    const cols = Math.floor(canvas.width / CELL_SIZE);
+
+    const maxRow = Math.max(0, rows - 2);
+    const maxCol = Math.max(0, cols - 2);
+
+    const newRow = Math.floor(Math.random() * (maxRow + 1));
+    const newCol = Math.floor(Math.random() * (maxCol + 1));
+
+    setInvSquare({row: newRow, col: newCol});
+  }, []);
+
   return (
     <canvas
       ref={canvasRef}
-      style={{ width: '100%', height: '100%', display: 'block' }}
+      style={{width: '100%', height: '100%', display: 'block'}}
       onMouseMove={handleMouseMove}
       onClick={handleClick}
       onMouseLeave={handleMouseLeave}

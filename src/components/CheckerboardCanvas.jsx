@@ -51,7 +51,7 @@ const CheckerboardCanvas = () => {
 
     const startRow = invSquare.row;
     const startCol = invSquare.col;
-    const targetRow = Math.max(1, targetSquareRef.current.row);
+    const targetRow = targetSquareRef.current.row;
     const targetCol = targetSquareRef.current.col;
 
     const newRow = startRow + (targetRow - startRow) * progress;

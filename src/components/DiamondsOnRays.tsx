@@ -1,6 +1,7 @@
 import React, {useEffect, useRef} from "react";
 
 interface DiamondsOnRaysProps {
+    printIndex?: boolean;
     rays?: number;
     diamondsPerRay?: number;
     startRadius?: number;
@@ -114,8 +115,9 @@ function drawDiamondFunhouse(
 
 const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
     {
+        printIndex = false,
         rays = 8,
-        diamondsPerRay = 15,
+        diamondsPerRay = 0,
         startRadius = 0,
         spacing = 20,
         diamondWidth = 20,
@@ -135,6 +137,9 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
         mirrorCurveY = -0.1,
         mirrorBarrel = 0.12,
         mirrorSegments = 16,
+        gapX = 15,
+        gapY = 0,
+        splitAngle = Math.PI / 6
     }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -167,7 +172,7 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
             angleRef.current += rotationSpeed * dt;
             inwardOffsetRef.current += inwardSpeed * dt;
 
-            const maxR = Math.min(cx, cy);
+            const maxR = Math.max(cx, cy);
 
             // helpers for local field and spacing
             const clampR = (r: number) => Math.max(0, Math.min(maxR, r));
@@ -213,66 +218,85 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
                 return k * radius * radius; // параболическое смещение
             };
 
+            const splitDirX = Math.cos(splitAngle);
+            const splitDirY = Math.sin(splitAngle);
+
             for (let r = 0; r < rays; r++) {
                 const baseAngle = (r / rays) * Math.PI * 2 + angleRef.current;
-
-                // голова потока
                 const head = startRadius - inwardOffsetRef.current;
 
-                // строим последовательность центров от головы, выбрасывая схлопнувшиеся
                 const centers: number[] = [];
                 let rad = head;
 
-                const budget = diamondsPerRay + 1;
-                for (let i = 0; i < budget; i++) {
-                    centers.push(rad);
-                    rad += centerStep(rad);
+                if (diamondsPerRay > 0) {
+                    for (let i = 0; i < diamondsPerRay + 1; i++) {
+                        centers.push(rad);
+                        rad += centerStep(rad);
+                    }
+                } else {
+                    while (rad <= (maxR * 1.2)) {
+                        centers.push(rad);
+                        rad += centerStep(rad);
+                    }
                 }
 
                 while (centers.length && centers[0] < 0) {
-                    // удаляем схлопнувшиеся (радиус < 0) спереди
                     centers.shift();
                     const last = centers.length ? centers[centers.length - 1] : head;
-                    // дозаполняем хвост до нужного количества
                     centers.push(last + centerStep(last));
                 }
 
-                const view = centers.slice(0, diamondsPerRay);
+                let view = centers.slice(0);
+
+                if (diamondsPerRay > 0) {
+                    view = centers.slice(0, diamondsPerRay);
+                }
 
                 for (let i = 0; i < view.length; i++) {
                     const radius = view[i];
                     const w = widthAt(radius);
                     const h = heightAt(radius);
 
-                    // угол луча с искривлением
                     const localAngle = baseAngle;
                     const dirX = Math.cos(localAngle);
                     const dirY = Math.sin(localAngle);
 
-                    // добавляем параболическое смещение поперёк луча
                     const offset = curveOffset(radius);
-                    const px = cx + dirX * radius + (-dirY) * offset;
-                    const py = cy + dirY * radius + (dirX) * offset;
+                    let px = cx + dirX * radius + (-dirY) * offset;
+                    let py = cy + dirY * radius + (dirX) * offset;
+
+                    // определяем сторону относительно наклонной линии
+                    const relX = px - cx;
+                    const relY = py - cy;
+                    const side = relX * splitDirY - relY * splitDirX;
+
+                    // выбираем центр втягивания
+                    const useCx = side >= 0 ? cx - gapX : cx + gapX;
+                    const useCy = side >= 0 ? cy - gapY : cy + gapY;
+
+                    // пересчитываем координаты относительно выбранного центра
+                    px = useCx + dirX * radius + (-dirY) * offset;
+                    py = useCy + dirY * radius + (dirX) * offset;
 
                     let angleRad = 0;
                     if (rotation === "radial") angleRad = localAngle + Math.PI / 2;
                     else if (typeof rotation === "number")
                         angleRad = (rotation * Math.PI) / 180 + Math.PI / 2;
 
-                    // рисуем ромб с нелинейной деформацией "кривое зеркало"
                     drawDiamondFunhouse(
                         ctx, px, py, w, h, angleRad, color,
                         mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments
                     );
 
-                    // индекс ромба (по центру, без деформации)
-                    // ctx.save();
-                    // ctx.fillStyle = "red";
-                    // ctx.font = `${Math.max(10, Math.floor(h / 3))}px Arial`;
-                    // ctx.textAlign = "center";
-                    // ctx.textBaseline = "middle";
-                    // ctx.fillText(String(i + 1), px, py);
-                    // ctx.restore();
+                    if (printIndex && i > 0) {
+                        ctx.save();
+                        ctx.fillStyle = "red";
+                        ctx.font = `${Math.max(10, Math.floor(h / 3))}px Arial`;
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(String(i + 1), px, py);
+                        ctx.restore();
+                    }
                 }
             }
 
@@ -286,27 +310,12 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
             inwardOffsetRef.current = 0;
         };
     }, [
-        rays,
-        diamondsPerRay,
-        startRadius,
-        spacing,
-        diamondWidth,
-        diamondHeight,
-        rotation,
-        color,
-        background,
-        rotationSpeed,
-        spaghettiFactorWidth,
-        spaghettiFactorHeight,
-        spaghettiFactorSpacing,
-        maxStretch,
-        minWidth,
-        decayMode,
-        inwardSpeed,
-        mirrorCurveX,
-        mirrorCurveY,
-        mirrorBarrel,
-        mirrorSegments,
+        printIndex, rays, diamondsPerRay, startRadius, spacing,
+        diamondWidth, diamondHeight, rotation, color, background,
+        rotationSpeed, spaghettiFactorWidth, spaghettiFactorHeight,
+        spaghettiFactorSpacing, maxStretch, minWidth, decayMode,
+        inwardSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel,
+        mirrorSegments, gapX, gapY, splitAngle
     ]);
 
     return (

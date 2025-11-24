@@ -6,8 +6,9 @@ export default function Diamond() {
 
     <div className="holder">
       <DiamondsOnRays
+        printIndex={true}
         rays={36}
-        diamondsPerRay={20}
+        diamondsPerRay={0}
         startRadius={0}
         spacing={0}
         diamondWidth={24}
@@ -20,13 +21,17 @@ export default function Diamond() {
         minWidth={1}
         inwardSpeed={80}
         mirrorCurveX={0.15}
-        mirrorCurveY={-0.015}
+        mirrorCurveY={0.015}
         mirrorBarrel={0.015}
         mirrorSegments={16}
+        gapX={2}
+        gapY={2}
+        phaseShift={0.1}
+        splitAngle={Math.PI / -5}
         color={"#000"}
         background={"#fff"}
         rotation={"radial"}
-        decayMode={"exponential"}
+        decayMode={"linear"}
       />
 
       {/*<RadialTriangles*/}

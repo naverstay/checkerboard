@@ -372,7 +372,7 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
         rotationSpeed, spaghettiFactorWidth, spaghettiFactorHeight,
         spaghettiFactorSpacing, maxStretch, minWidth, decayMode,
         inwardSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel,
-        mirrorSegments, gapX, gapY, splitAngle, holeCenter
+        mirrorSegments, gapX, gapY, splitAngle, holeCenter, invertColors
     ]);
 
     useEffect(() => {

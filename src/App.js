@@ -13,22 +13,26 @@ function App() {
 
       <DiamondsOnRays
         rays={36}
-        diamondsPerRay={50}
+        diamondsPerRay={3}
         startRadius={0}
-        spacing={48}
-        diamondWidth={48}
+        spacing={0}
+        diamondWidth={24}
         diamondHeight={96}
-        rotation="radial"
-        color="#fff"
-        background="#111"
-        rotationSpeed={-0.06}
-        spaghettiFactorWidth={10.0}
+        rotationSpeed={-0.6}
+        spaghettiFactorWidth={20.0}
         spaghettiFactorHeight={1.0}
-        spaghettiFactorSpacing={1.0}
-        maxStretch={100}
-        minWidth={2}
-        decayMode="exponential"
-        inwardSpeed={100}
+        spaghettiFactorSpacing={1.50}
+        maxStretch={250}
+        minWidth={1}
+        inwardSpeed={80}
+        mirrorCurveX={0.1}
+        mirrorCurveY={-0.01}
+        mirrorBarrel={0.01}
+        mirrorSegments={16}
+        color={"#000"}
+        background={"#fff"}
+        rotation={"radial"}
+        decayMode={"exponential"}
       />
 
       {/*<RadialTriangles*/}

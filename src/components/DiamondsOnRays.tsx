@@ -209,7 +209,7 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
 
             // функция искривления луча (арка/парабола)
             const curveOffset = (radius: number) => {
-                const k = -0.004; // коэффициент кривизны
+                const k = rotationSpeed / 250; // коэффициент кривизны
                 return k * radius * radius; // параболическое смещение
             };
 
@@ -266,13 +266,13 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
                     );
 
                     // индекс ромба (по центру, без деформации)
-                    ctx.save();
-                    ctx.fillStyle = "red";
-                    ctx.font = `${Math.max(10, Math.floor(h / 3))}px Arial`;
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(String(i + 1), px, py);
-                    ctx.restore();
+                    // ctx.save();
+                    // ctx.fillStyle = "red";
+                    // ctx.font = `${Math.max(10, Math.floor(h / 3))}px Arial`;
+                    // ctx.textAlign = "center";
+                    // ctx.textBaseline = "middle";
+                    // ctx.fillText(String(i + 1), px, py);
+                    // ctx.restore();
                 }
             }
 

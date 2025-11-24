@@ -17,3 +17,44 @@ code {
     height: 100vh;
     width: 100vw;
 }
+
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px;
+    transform: translateY(calc(4px - 100%));
+    transition: transform .3s ease-in-out;
+}
+
+.home-page .nav,
+.nav:hover {
+    transform: translateY(0);
+}
+
+.nav a {
+    font-size: 16px;
+    font-weight: bold;
+    color: #fdfdfd;
+    text-decoration: none;
+    transition: text-shadow .3s ease-in-out;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+}
+
+.nav a:hover {
+    text-decoration: underline;
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.9);
+}
+
+nav a.active {
+    color: #007bff;
+    pointer-events: none;
+    text-decoration: none;
+    text-shadow: 0 4px 8px rgba(0, 123, 255, 0.9);
+}

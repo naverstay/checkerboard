@@ -1,139 +1,41 @@
+import {BrowserRouter as Router, Routes, Route, NavLink, useLocation} from "react-router-dom";
+import {useEffect} from "react";
+import Home from "./pages/Home";
+import Chess from "./pages/Chess";
+import Diamond from "./pages/Diamond";
 import './App.css';
-import CheckerboardCanvas from "./components/CheckerboardCanvas";
-import FraserSpiral from "./components/FraserSpiral";
-import FraserSpiralAnimated from "./components/FraserSpiralAnimated";
-import KitaokaPseudoSpiral from "./components/KitaokaPseudoSpiral";
-import {AbstractSpiralSVG} from "./components/AbstractSpiralSVG.tsx";
-import {RadialTriangles} from "./components/RadialTriangles.tsx";
-import DiamondsOnRays from "./components/DiamondsOnRays.tsx";
+
+function BodyClassController() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname === "/") {
+      document.body.classList.add("home-page");
+    } else {
+      document.body.classList.remove("home-page");
+    }
+  }, [location.pathname]);
+
+  return null;
+}
 
 function App() {
   return (
-    <div className="holder">
+    <Router>
+      <BodyClassController/>
 
-      <DiamondsOnRays
-        rays={36}
-        diamondsPerRay={3}
-        startRadius={0}
-        spacing={0}
-        diamondWidth={24}
-        diamondHeight={96}
-        rotationSpeed={-0.6}
-        spaghettiFactorWidth={20.0}
-        spaghettiFactorHeight={1.0}
-        spaghettiFactorSpacing={1.50}
-        maxStretch={250}
-        minWidth={1}
-        inwardSpeed={80}
-        mirrorCurveX={0.1}
-        mirrorCurveY={-0.01}
-        mirrorBarrel={0.01}
-        mirrorSegments={16}
-        color={"#000"}
-        background={"#fff"}
-        rotation={"radial"}
-        decayMode={"exponential"}
-      />
+      <nav className="nav">
+        <NavLink to="/">Home</NavLink>
+        <NavLink to="/chess">Chess</NavLink>
+        <NavLink to="/diamond">Diamond</NavLink>
+      </nav>
 
-      {/*<RadialTriangles*/}
-      {/*  count={50}*/}
-      {/*  innerRadius={0}*/}
-      {/*  outerRadius={1320}*/}
-      {/*  wedgeAngle={10}*/}
-      {/*  angleOffset={-90}*/}
-      {/*  fill={["#000", "#fff"]}*/}
-      {/*  stroke={"#fff"}*/}
-      {/*  lineWidth={0}*/}
-      {/*  twistFactor={20}*/}
-      {/*  background={"#fff"}*/}
-      {/*  animate={true}*/}
-      {/*  rotationSpeedDeg={-2}*/}
-      {/*  rhombusHeight={20}*/}
-      {/*  rhombusWidth={40}*/}
-      {/*  rhombusFill="#555"*/}
-      {/*/>*/}
-
-      {/*<AbstractSpiralSVG*/}
-      {/*  width={640}*/}
-      {/*  height={640}*/}
-      {/*  arms={28}*/}
-      {/*  strokeWidth={8}*/}
-      {/*  turns={7}*/}
-      {/*  growth={0.18}*/}
-      {/*  wobbleAmp={12}*/}
-      {/*  wobbleFreq={2.5}*/}
-      {/*  rotate*/}
-      {/*  rotationSpeed={24}*/}
-      {/*  bg="#fff"*/}
-      {/*  fgBlack="#000"*/}
-      {/*  fgWhite="#fff"*/}
-      {/*  description="Abstract Spiral Series, Abstract Rotating Shape Vector, Black and White Shape Distort in Concentric, Irregular geometric elements, Vector Illustration"*/}
-      {/*/>*/}
-
-      {/* High-contrast, denser look */}
-      {/*<AbstractSpiralSVG*/}
-      {/*  width={640}*/}
-      {/*  height={640}*/}
-      {/*  arms={40}*/}
-      {/*  strokeWidth={6}*/}
-      {/*  turns={8}*/}
-      {/*  growth={0.14}*/}
-      {/*  wobbleAmp={16}*/}
-      {/*  wobbleFreq={4}*/}
-      {/*  rotate={false}*/}
-      {/*  bg="#000"*/}
-      {/*  fgBlack="#000"*/}
-      {/*  fgWhite="#fff"*/}
-      {/*/>*/}
-
-      {/*<CheckerboardCanvas/>*/}
-
-      {/*<KitaokaPseudoSpiral*/}
-      {/*  bg="#000"*/}
-      {/*  space="#000"*/}
-      {/*  rings={24}*/}
-      {/*  segments={10}*/}
-      {/*  ringThickness={20}*/}
-      {/*  gap={20}*/}
-      {/*  tilt={45}*/}
-      {/*  contrast={1}*/}
-      {/*  rotationSpeed={-0.005}*/}
-      {/*  tiltAmplitude={0}*/}
-      {/*  pullSpeed={0}*/}
-      {/*  zoom={2}*/}
-      {/*  shape="rect"   // варианты: rect | diamond | ellipse*/}
-      {/*/>*/}
-
-      {/*<FraserSpiralAnimated*/}
-      {/*  bg="#000"*/}
-      {/*  space="#000"*/}
-      {/*  gapX={0}*/}
-      {/*  gapY={0}*/}
-      {/*  phaseOffset={Math.PI / 4}*/}
-      {/*  zoom={2}*/}
-      {/*  rings={30}*/}
-      {/*  segments={40}*/}
-      {/*  ringThickness={30}*/}
-      {/*  gap={20}*/}
-      {/*  tilt={45}*/}
-      {/*  contrast={1}*/}
-      {/*  rotationSpeed={-0.05}*/}
-      {/*  tiltAmplitude={0}*/}
-      {/*  pullSpeed={0}*/}
-      {/*/>*/}
-
-      {/*<FraserSpiral*/}
-      {/*  width={700}*/}
-      {/*  height={700}*/}
-      {/*  rings={22}*/}
-      {/*  segments={72}*/}
-      {/*  ringThickness={12}*/}
-      {/*  gap={8}*/}
-      {/*  tilt={16}*/}
-      {/*  contrast={0.95}*/}
-      {/*  bg="#000fff"*/}
-      {/*/>*/}
-    </div>
+      <Routes>
+        <Route path="/" element={<Home/>}/>
+        <Route path="/chess" element={<Chess/>}/>
+        <Route path="/diamond" element={<Diamond/>}/>
+      </Routes>
+    </Router>
   );
 }
 

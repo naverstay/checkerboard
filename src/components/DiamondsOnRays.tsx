@@ -204,7 +204,7 @@ const DiamondsOnRaysCanvas: React.FC<DiamondsOnRaysProps> = (
         return () => {
             canvas.removeEventListener("click", handleClick);
         };
-    }, [holeCenter, gapX, gapY, containerRef]);
+    }, [holeCenter, gapX, gapY, containerRef, invertColors]);
 
     useEffect(() => {
         let frameId: number;

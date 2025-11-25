@@ -183,7 +183,7 @@ const FanBlades: React.FC<{
             lastTimeRef.current = now;
             angleRef.current += rotationSpeed * dt;
 
-            ctx.fillStyle = "#fff";
+            ctx.fillStyle = !invertColors ? "#000" : "#fff";
             ctx.fillRect(0, 0, rect.width, rect.height);
 
             let {x1, y1, x2, y2} = centersRef.current;
@@ -244,15 +244,15 @@ const FanBlades: React.FC<{
             const dy = y1 - y2;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < teleportLimit) {
-                const cx = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
-                const cy = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
+                const cx = getSecureRandom(0.4 * rect.width, 0.6 * rect.width);
+                const cy = getSecureRandom(0.4 * rect.height, 0.6 * rect.height);
 
                 x1 = cx + gapX
                 y1 = cy + gapY
                 x2 = cx - gapX
                 y2 = cy - gapY
 
-                setInvertColors((getSecureRandom(-10000, 10000) / 10000) > 0.5 ? !invertColors : invertColors);
+                setInvertColors((getSecureRandom(-1, 1)) > 0 ? !invertColors : invertColors);
             }
 
             centersRef.current = {x1, y1, x2, y2};
@@ -267,7 +267,7 @@ const FanBlades: React.FC<{
             ctx.translate(-x1, -y1);
             drawRays(ctx, x1, y1, rays, rayLength,
                 mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor,
-                rect.width, rect.height, !invertColors ? '#000' : '#fff');
+                rect.width, rect.height, invertColors ? '#000' : '#fff');
             ctx.restore();
 
             // рисуем второй центр

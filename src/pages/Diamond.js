@@ -6,7 +6,7 @@ export default function Diamond() {
     <div className="holder">
       <FanBlades
         printIndex={false}
-        rays={100}
+        rays={72}
         diamondsPerRay={0}
         startRadius={0}
         spacing={0}
@@ -19,11 +19,11 @@ export default function Diamond() {
         spaghettiFactorSpacing={1.0}
         maxStretch={250}
         minWidth={1}
-        distancingStep={1}
+        distancingStep={0.5}
         inwardSpeed={80}
-        teleportLimit={6}
-        gapX={40}
-        gapY={-40}
+        teleportLimit={8}
+        gapX={20}
+        gapY={-20}
         mirrorCurveX={0.5}
         mirrorCurveY={0.25}
         mirrorBarrel={0.5}

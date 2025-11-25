@@ -244,10 +244,14 @@ const FanBlades: React.FC<{
             const dy = y1 - y2;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < teleportLimit) {
-                x1 = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
-                y1 = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
-                x2 = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
-                y2 = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
+                const cx = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
+                const cy = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
+
+                x1 = cx + gapX
+                y1 = cy + gapY
+                x2 = cx - gapX
+                y2 = cy - gapY
+
                 setInvertColors((getSecureRandom(-10000, 10000) / 10000) > 0.5 ? !invertColors : invertColors);
             }
 

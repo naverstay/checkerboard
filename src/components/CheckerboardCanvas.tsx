@@ -1,8 +1,7 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 
 const CELL_SIZE = 16;
 const TICK_MS = 150;
-const IDLE_STOP_MS = 150;
 const ANIMATION_DURATION = 1; // длительность анимации прыжка (мс)
 
 interface Position {
@@ -21,38 +20,22 @@ const CheckerboardCanvas: React.FC = () => {
     const [hoverPos, setHoverPos] = useState<Position | null>(null);
     const [shift, setShift] = useState<number>(0);
 
+    const [tickMs, setTickMs] = useState<number>(TICK_MS);
+
     // текущие координаты квадрата
-    const [invSquare, setInvSquare] = useState<SquarePosition>({ row: -200, col: -200 });
+    const [invSquare, setInvSquare] = useState<SquarePosition>({row: -200, col: -200});
     // целевые координаты квадрата
     const targetSquareRef = useRef<SquarePosition>(invSquare);
     const animStartRef = useRef<number | null>(null);
 
-    const intervalRef = useRef<number | null>(null);
-    const idleTimeoutRef = useRef<number | null>(null);
-
     // ---------- Таймер смещения ----------
-    const startTicking = useCallback(() => {
-        if (intervalRef.current) return;
-        intervalRef.current = window.setInterval(() => {
+    useEffect(() => {
+        const interval = window.setInterval(() => {
             setShift(prev => (prev + 1) % 2);
-        }, TICK_MS);
-    }, []);
+        }, tickMs);
 
-    const stopTicking = useCallback(() => {
-        if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-            intervalRef.current = null;
-        }
-    }, []);
-
-    const resetIdleStop = useCallback(() => {
-        if (idleTimeoutRef.current) {
-            clearTimeout(idleTimeoutRef.current);
-        }
-        idleTimeoutRef.current = window.setTimeout(() => {
-            stopTicking();
-        }, IDLE_STOP_MS);
-    }, [stopTicking]);
+        return () => clearInterval(interval);
+    }, [tickMs]);
 
     // ---------- Анимация перемещения квадрата ----------
     const animateSquare = useCallback((timestamp: number) => {
@@ -67,7 +50,7 @@ const CheckerboardCanvas: React.FC = () => {
         const newRow = startRow + (targetRow - startRow) * progress;
         const newCol = startCol + (targetCol - startCol) * progress;
 
-        setInvSquare({ row: newRow, col: newCol });
+        setInvSquare({row: newRow, col: newCol});
 
         if (progress < 1) {
             requestAnimationFrame(animateSquare);
@@ -88,7 +71,7 @@ const CheckerboardCanvas: React.FC = () => {
         const newRow = Math.floor(Math.random() * (maxRow + 1));
         const newCol = Math.floor(Math.random() * (maxCol + 1));
 
-        targetSquareRef.current = { row: newRow, col: newCol };
+        targetSquareRef.current = {row: newRow, col: newCol};
         animStartRef.current = null;
         requestAnimationFrame(animateSquare);
     }, [animateSquare]);
@@ -100,7 +83,7 @@ const CheckerboardCanvas: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const { width, height } = canvas;
+        const {width, height} = canvas;
 
         const rows = Math.ceil(height / CELL_SIZE);
         const cols = Math.ceil(width / CELL_SIZE);
@@ -184,11 +167,8 @@ const CheckerboardCanvas: React.FC = () => {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        setHoverPos({ x, y });
-
-        startTicking();
-        resetIdleStop();
-    }, [startTicking, resetIdleStop]);
+        setHoverPos({x, y});
+    }, []);
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
@@ -208,26 +188,15 @@ const CheckerboardCanvas: React.FC = () => {
             col < Math.floor(invSquare.col) + 2
         ) {
             moveInvSquareRandomly();
+
+            setTickMs(TICK_MS / 3);
+            setTimeout(() => setTickMs(TICK_MS), 1000);
         }
     }, [invSquare, moveInvSquareRandomly]);
 
     const handleMouseLeave = useCallback(() => {
         setHoverPos(null);
-        stopTicking();
-        if (idleTimeoutRef.current) {
-            clearTimeout(idleTimeoutRef.current);
-            idleTimeoutRef.current = null;
-        }
-    }, [stopTicking]);
-
-    useEffect(() => {
-        return () => {
-            stopTicking();
-            if (idleTimeoutRef.current) {
-                clearTimeout(idleTimeoutRef.current);
-            }
-        };
-    }, [stopTicking]);
+    }, []);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -242,13 +211,13 @@ const CheckerboardCanvas: React.FC = () => {
         const newRow = Math.floor(Math.random() * (maxRow + 1));
         const newCol = Math.floor(Math.random() * (maxCol + 1));
 
-        setInvSquare({ row: newRow, col: newCol });
+        setInvSquare({row: newRow, col: newCol});
     }, []);
 
     return (
         <canvas
             ref={canvasRef}
-            style={{ width: '100%', height: '100%', display: 'block' }}
+            style={{width: '100%', height: '100%', display: 'block'}}
             onMouseMove={handleMouseMove}
             onClick={handleClick}
             onMouseLeave={handleMouseLeave}

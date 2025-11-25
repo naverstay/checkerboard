@@ -1,5 +1,6 @@
 import React, {useEffect, useRef} from "react";
 
+// Установка размеров канваса
 function setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     canvas.width = Math.floor(w * dpr);
@@ -11,6 +12,7 @@ function setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
     return {ctx, dpr};
 }
 
+// Искажение точки
 function distortPoint(
     x: number, y: number, w: number, h: number,
     barrel: number, curveX: number, curveY: number
@@ -31,6 +33,7 @@ function distortPoint(
     return {x: dx, y: dy};
 }
 
+// Отрисовка лучей
 function drawRays(
     ctx: CanvasRenderingContext2D,
     cx: number,
@@ -85,6 +88,18 @@ function drawRays(
     }
 }
 
+// Вращение точки вокруг центра экрана
+function rotateAroundCenter(px: number, py: number, cx: number, cy: number, angleStep: number) {
+    const dx = px - cx;
+    const dy = py - cy;
+    const cosA = Math.cos(angleStep);
+    const sinA = Math.sin(angleStep);
+    return {
+        x: cx + dx * cosA - dy * sinA,
+        y: cy + dx * sinA + dy * cosA
+    };
+}
+
 const FanBlades: React.FC<{
     rays?: number;
     rotationSpeed?: number;
@@ -96,6 +111,7 @@ const FanBlades: React.FC<{
     gapX?: number;
     gapY?: number;
     phaseShift?: number;
+    distancingStep?: number;
 }> = ({
           rays = 8,
           rotationSpeed = 0.5,
@@ -106,17 +122,26 @@ const FanBlades: React.FC<{
           spreadFactor = 0.15,
           gapX = 40,
           gapY = 0,
-          phaseShift = Math.PI / 4 // смещение по умолчанию
+          phaseShift = Math.PI / 4,
+          distancingStep = 1.0
       }) => {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
     const angleRef = useRef(0);
     const lastTimeRef = useRef<number | null>(null);
 
+    const centersRef = useRef<{ x1: number, y1: number, x2: number, y2: number }>({x1: 0, y1: 0, x2: 0, y2: 0});
+    const cursorPos = useRef<{ x: number, y: number } | null>(null);
+
     useEffect(() => {
         const canvas = canvasRef.current;
         const container = containerRef.current;
         if (!canvas || !container) return;
+
+        const rect = container.getBoundingClientRect();
+        const cx = rect.width / 2;
+        const cy = rect.height / 2;
+        centersRef.current = {x1: cx + gapX, y1: cy + gapY, x2: cx - gapX, y2: cy - gapY};
 
         const resizeObserver = new ResizeObserver(() => {
             const rect = container.getBoundingClientRect();
@@ -124,8 +149,13 @@ const FanBlades: React.FC<{
         });
         resizeObserver.observe(container);
 
-        let frameId: number;
+        const handleMouseMove = (e: MouseEvent) => {
+            const cRect = canvas.getBoundingClientRect();
+            cursorPos.current = {x: e.clientX - cRect.left, y: e.clientY - cRect.top};
+        };
+        canvas.addEventListener("mousemove", handleMouseMove);
 
+        let frameId: number;
         const render = (now: number) => {
             const rect = container.getBoundingClientRect();
             const {ctx} = setCanvasSize(canvas, rect.width, rect.height);
@@ -134,68 +164,107 @@ const FanBlades: React.FC<{
             if (lastTimeRef.current == null) lastTimeRef.current = now;
             const dt = (now - lastTimeRef.current) / 1000;
             lastTimeRef.current = now;
-
             angleRef.current += rotationSpeed * dt;
 
             ctx.fillStyle = "#fff";
             ctx.fillRect(0, 0, rect.width, rect.height);
 
-            const cx = rect.width / 2;
-            const cy = rect.height / 2;
+            let {x1, y1, x2, y2} = centersRef.current;
+            const maxDist = Math.min(rect.width, rect.height) / 2;
 
-            // первый центр (+gapX/+gapY)
+            if (cursorPos.current) {
+                const {x, y} = cursorPos.current;
+                const dxC = x2 - x1;
+                const dyC = y2 - y1;
+                const distCenters = Math.sqrt(dxC * dxC + dyC * dyC);
+
+                if (distCenters > 1e-6) {
+                    // проверка "между центрами"
+                    const ux = x - x1;
+                    const uy = y - y1;
+                    const denom = distCenters * distCenters;
+                    let t = (ux * dxC + uy * dyC) / denom;
+                    const isProjectionInside = t > 0 && t < 1;
+                    const clx = x1 + t * dxC;
+                    const cly = y1 + t * dyC;
+                    const dxSeg = x - clx;
+                    const dySeg = y - cly;
+                    const distToSegment = Math.sqrt(dxSeg * dxSeg + dySeg * dySeg);
+                    const cursorBetween = isProjectionInside && distToSegment < 20;
+
+                    const ux12 = dxC / distCenters;
+                    const uy12 = dyC / distCenters;
+
+                    if (cursorBetween) {
+                        // сближаем
+                        x1 += ux12 * distancingStep;
+                        y1 += uy12 * distancingStep;
+                        x2 -= ux12 * distancingStep;
+                        y2 -= uy12 * distancingStep;
+                    } else if (distCenters < maxDist) {
+                        // раздвигаем
+                        x1 -= ux12 * distancingStep;
+                        y1 -= uy12 * distancingStep;
+                        x2 += ux12 * distancingStep;
+                        y2 += uy12 * distancingStep;
+                    } else {
+                        // вращаем вокруг центра экрана
+                        const cx = rect.width / 2;
+                        const cy = rect.height / 2;
+                        const angleStep = 0.001 * distancingStep;
+                        const p1 = rotateAroundCenter(x1, y1, cx, cy, angleStep);
+                        const p2 = rotateAroundCenter(x2, y2, cx, cy, angleStep);
+                        x1 = p1.x;
+                        y1 = p1.y;
+                        x2 = p2.x;
+                        y2 = p2.y;
+                    }
+                }
+            }
+
+            // телепортация при слишком малой дистанции
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 10) {
+                x1 = Math.random() * rect.width;
+                y1 = Math.random() * rect.height;
+                x2 = Math.random() * rect.width;
+                y2 = Math.random() * rect.height;
+            }
+
+            centersRef.current = {x1, y1, x2, y2};
+
+            // рисуем первый центр
             ctx.save();
-            ctx.translate(cx + gapX, cy + gapY);
+            ctx.translate(x1, y1);
             ctx.rotate(angleRef.current);
-            ctx.translate(-(cx + gapX), -(cy + gapY));
-            drawRays(
-                ctx,
-                cx + gapX,
-                cy + gapY,
-                rays,
-                Math.max(rect.width, rect.height) / 2,
-                mirrorCurveX,
-                mirrorCurveY,
-                mirrorBarrel,
-                mirrorSegments,
-                spreadFactor,
-                rect.width,
-                rect.height,
-                '#000'
-            );
+            ctx.translate(-x1, -y1);
+            drawRays(ctx, x1, y1, rays, Math.max(rect.width, rect.height) / 2,
+                mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor,
+                rect.width, rect.height, '#000');
             ctx.restore();
 
-            // второй центр (-gapX/-gapY) с фазовым смещением
+            // рисуем второй центр
             ctx.save();
-            ctx.translate(cx - gapX, cy - gapY);
+            ctx.translate(x2, y2);
             ctx.rotate(angleRef.current + phaseShift);
-            ctx.translate(-(cx - gapX), -(cy - gapY));
-            drawRays(
-                ctx,
-                cx - gapX,
-                cy - gapY,
-                rays,
-                Math.max(rect.width, rect.height) / 2,
-                mirrorCurveX,
-                mirrorCurveY,
-                mirrorBarrel,
-                mirrorSegments,
-                spreadFactor,
-                rect.width,
-                rect.height,
-                '#fff'
-            );
+            ctx.translate(-x2, -y2);
+            drawRays(ctx, x2, y2, rays, Math.max(rect.width, rect.height) / 2,
+                mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor,
+                rect.width, rect.height, '#fff');
             ctx.restore();
 
             frameId = requestAnimationFrame(render);
         };
-
         frameId = requestAnimationFrame(render);
+
         return () => {
             cancelAnimationFrame(frameId);
             resizeObserver.disconnect();
+            canvas.removeEventListener("mousemove", handleMouseMove);
         };
-    }, [rays, rotationSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor, gapX, gapY, phaseShift]);
+    }, [rays, rotationSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor, gapX, gapY, phaseShift, distancingStep]);
 
     return (
         <div ref={containerRef} style={{width: "100%", height: "100%"}}>

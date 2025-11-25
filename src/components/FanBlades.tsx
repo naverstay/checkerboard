@@ -1,6 +1,22 @@
-import React, {useEffect, useRef} from "react";
+import React, {useEffect, useRef, useState} from "react";
 
-// Установка размеров канваса
+const getRandomValues = (min: number, max: number): number => {
+    const range = max - min + 1;
+    const randomBuffer = new Uint32Array(1);
+    crypto.getRandomValues(randomBuffer);
+    return min + (randomBuffer[0] % range);
+};
+
+const getSecureRandom = (min: number, max: number): number => {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        return getRandomValues(min, max);
+    } else {
+        // Fallback на Math.random() если crypto API не доступен
+        console.warn('Crypto API not available, using Math.random() as fallback');
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+};
+
 function setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
     const dpr = Math.max(1, window.devicePixelRatio || 1);
     canvas.width = Math.floor(w * dpr);
@@ -12,7 +28,6 @@ function setCanvasSize(canvas: HTMLCanvasElement, w: number, h: number) {
     return {ctx, dpr};
 }
 
-// Искажение точки
 function distortPoint(
     x: number, y: number, w: number, h: number,
     barrel: number, curveX: number, curveY: number
@@ -33,7 +48,6 @@ function distortPoint(
     return {x: dx, y: dy};
 }
 
-// Отрисовка лучей
 function drawRays(
     ctx: CanvasRenderingContext2D,
     cx: number,
@@ -88,7 +102,6 @@ function drawRays(
     }
 }
 
-// Вращение точки вокруг центра экрана
 function rotateAroundCenter(px: number, py: number, cx: number, cy: number, angleStep: number) {
     const dx = px - cx;
     const dy = py - cy;
@@ -108,6 +121,7 @@ const FanBlades: React.FC<{
     mirrorBarrel?: number;
     mirrorSegments?: number;
     spreadFactor?: number;
+    teleportLimit?: number;
     gapX?: number;
     gapY?: number;
     phaseShift?: number;
@@ -120,6 +134,7 @@ const FanBlades: React.FC<{
           mirrorBarrel = 0.12,
           mirrorSegments = 32,
           spreadFactor = 0.15,
+          teleportLimit = 10,
           gapX = 40,
           gapY = 0,
           phaseShift = Math.PI / 4,
@@ -132,6 +147,8 @@ const FanBlades: React.FC<{
 
     const centersRef = useRef<{ x1: number, y1: number, x2: number, y2: number }>({x1: 0, y1: 0, x2: 0, y2: 0});
     const cursorPos = useRef<{ x: number, y: number } | null>(null);
+
+    const [invertColors, setInvertColors] = useState<boolean>(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -196,7 +213,7 @@ const FanBlades: React.FC<{
                     const uy12 = dyC / distCenters;
 
                     if (cursorBetween) {
-                        // сближаем
+                        // приоритет: сближаем, вращение останавливается
                         x1 += ux12 * distancingStep;
                         y1 += uy12 * distancingStep;
                         x2 -= ux12 * distancingStep;
@@ -226,23 +243,27 @@ const FanBlades: React.FC<{
             const dx = x1 - x2;
             const dy = y1 - y2;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 10) {
-                x1 = Math.random() * rect.width;
-                y1 = Math.random() * rect.height;
-                x2 = Math.random() * rect.width;
-                y2 = Math.random() * rect.height;
+            if (dist < teleportLimit) {
+                x1 = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
+                y1 = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
+                x2 = getSecureRandom(0.3 * rect.width, 0.7 * rect.width);
+                y2 = getSecureRandom(0.3 * rect.height, 0.7 * rect.height);
+                setInvertColors((getSecureRandom(-10000, 10000) / 10000) > 0.5 ? !invertColors : invertColors);
             }
 
             centersRef.current = {x1, y1, x2, y2};
+
+            // увеличенная длина лучей
+            const rayLength = Math.max(rect.width, rect.height);
 
             // рисуем первый центр
             ctx.save();
             ctx.translate(x1, y1);
             ctx.rotate(angleRef.current);
             ctx.translate(-x1, -y1);
-            drawRays(ctx, x1, y1, rays, Math.max(rect.width, rect.height) / 2,
+            drawRays(ctx, x1, y1, rays, rayLength,
                 mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor,
-                rect.width, rect.height, '#000');
+                rect.width, rect.height, !invertColors ? '#000' : '#fff');
             ctx.restore();
 
             // рисуем второй центр
@@ -250,9 +271,9 @@ const FanBlades: React.FC<{
             ctx.translate(x2, y2);
             ctx.rotate(angleRef.current + phaseShift);
             ctx.translate(-x2, -y2);
-            drawRays(ctx, x2, y2, rays, Math.max(rect.width, rect.height) / 2,
+            drawRays(ctx, x2, y2, rays, rayLength,
                 mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor,
-                rect.width, rect.height, '#fff');
+                rect.width, rect.height, invertColors ? '#000' : '#fff');
             ctx.restore();
 
             frameId = requestAnimationFrame(render);
@@ -264,7 +285,7 @@ const FanBlades: React.FC<{
             resizeObserver.disconnect();
             canvas.removeEventListener("mousemove", handleMouseMove);
         };
-    }, [rays, rotationSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor, gapX, gapY, phaseShift, distancingStep]);
+    }, [rays, rotationSpeed, mirrorCurveX, mirrorCurveY, mirrorBarrel, mirrorSegments, spreadFactor, teleportLimit, gapX, gapY, phaseShift, distancingStep, invertColors]);
 
     return (
         <div ref={containerRef} style={{width: "100%", height: "100%"}}>

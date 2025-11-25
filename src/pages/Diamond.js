@@ -21,6 +21,7 @@ export default function Diamond() {
         minWidth={1}
         distancingStep={1}
         inwardSpeed={80}
+        teleportLimit={6}
         gapX={40}
         gapY={-40}
         mirrorCurveX={0.5}

@@ -1,7 +1,7 @@
 import React, {useRef, useEffect, useState, useCallback} from 'react';
 
 const CELL_SIZE = 16;
-const TICK_MS = 150;
+const TICK_MS = 500;
 const ANIMATION_DURATION = 1; // длительность анимации прыжка (мс)
 
 interface Position {
@@ -187,9 +187,9 @@ const CheckerboardCanvas: React.FC = () => {
             col >= Math.floor(invSquare.col) &&
             col < Math.floor(invSquare.col) + 2
         ) {
-            setTickMs(TICK_MS / 10);
+            setTickMs(TICK_MS / 3);
             moveInvSquareRandomly();
-            setTimeout(() => setTickMs(TICK_MS), 2000);
+            setTimeout(() => setTickMs(TICK_MS), TICK_MS);
         }
     }, [invSquare, moveInvSquareRandomly]);
 

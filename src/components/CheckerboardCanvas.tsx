@@ -187,10 +187,9 @@ const CheckerboardCanvas: React.FC = () => {
             col >= Math.floor(invSquare.col) &&
             col < Math.floor(invSquare.col) + 2
         ) {
+            setTickMs(TICK_MS / 10);
             moveInvSquareRandomly();
-
-            setTickMs(TICK_MS / 3);
-            setTimeout(() => setTickMs(TICK_MS), 1000);
+            setTimeout(() => setTickMs(TICK_MS), 2000);
         }
     }, [invSquare, moveInvSquareRandomly]);
 
